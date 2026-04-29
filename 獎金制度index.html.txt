@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 獎金試算器 | 591業務部</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2e4a;--blue:#1e6fbf;--blue-dk:#154f8a;
+  --gold:#d97706;--green:#15803d;--red:#b91c1c;
+  --bg:#f0f2f5;--surface:#fff;--border:#c8cdd5;
+  --row-even:#f7f9fc;--row-head:#e8edf5;
+  --text:#1a1a1a;--muted:#5a6375;
+  --input-bg:#fffde7;--calc-bg:#ebf3fb;--result-bg:#eaf3de;
+}
+html,body{height:100%;font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.4;}
+
+/* Top bar */
+.topbar{background:var(--navy);color:#fff;padding:0 20px;display:flex;align-items:center;gap:16px;height:48px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.topbar-logo{font-size:15px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.topbar-sub{font-size:11px;color:rgba(255,255,255,.45);border-left:1px solid rgba(255,255,255,.2);padding-left:14px;}
+.topbar-spacer{flex:1;}
+.topbar-badge{font-size:11px;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:20px;color:rgba(255,255,255,.6);}
+
+/* Tab bar */
+.tabbar{display:flex;background:#152338;padding:0 16px;gap:2px;align-items:flex-end;border-bottom:2px solid var(--blue);}
+.tab{padding:9px 16px;font-size:12px;font-weight:700;color:rgba(255,255,255,.45);cursor:pointer;border-radius:6px 6px 0 0;border:none;background:transparent;font-family:inherit;letter-spacing:.03em;transition:all .15s;white-space:nowrap;}
+.tab.active{background:var(--bg);color:var(--navy);}
+.tab:not(.active):hover{color:#fff;background:rgba(255,255,255,.08);}
+
+/* Page */
+.page{display:none;padding:16px 20px 40px;}
+.page.active{display:block;}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;}
+.toolbar-title{font-size:14px;font-weight:700;color:var(--navy);flex:1;}
+.legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);}
+.leg-sw{width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.12);}
+
+/* Section */
+.section-wrap{margin-bottom:14px;border:1px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+.sec-title{background:var(--blue);color:#fff;padding:7px 14px;font-size:12px;font-weight:700;letter-spacing:.04em;}
+.sec-title.green{background:#1a4a20;}
+
+/* Excel table */
+.xtable{width:100%;border-collapse:collapse;background:var(--surface);font-size:13px;}
+.xtable th{background:var(--navy);color:#fff;padding:7px 10px;font-weight:600;font-size:12px;text-align:center;border:1px solid #2a4060;white-space:nowrap;}
+.xtable th.left{text-align:left;}
+.xtable td{padding:6px 10px;border:1px solid var(--border);vertical-align:middle;}
+.xtable tr:nth-child(even) td{background:var(--row-even);}
+.xtable tr:nth-child(odd) td{background:var(--surface);}
+
+/* Cell types */
+.inp{background:var(--input-bg)!important;}
+.inp input,.inp select{
+  width:100%;height:28px;border:1px solid #c8a000;border-radius:3px;
+  padding:0 8px;font-size:13px;font-family:inherit;
+  background:var(--input-bg);color:#7a5b00;font-weight:700;
+  outline:none;text-align:right;transition:border-color .15s;
+}
+.inp select{text-align:left;}
+.inp input:focus,.inp select:focus{border-color:var(--blue);}
+.calc-cell{background:var(--calc-bg)!important;color:#185fa5;font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;}
+.result-cell{background:var(--result-bg)!important;color:var(--green);font-family:'IBM Plex Mono',monospace;font-weight:700;text-align:right;}
+.result-cell.big{font-size:15px;}
+.final-row td{background:#d1fae5!important;color:#065f46!important;font-weight:800;font-size:15px;}
+.final-row .result-cell{font-size:16px;color:#065f46!important;}
+.row-result td{background:var(--result-bg)!important;font-weight:700;color:var(--green);}
+.zero-cell{background:#fff5f5!important;color:var(--red)!important;font-family:'IBM Plex Mono',monospace;font-weight:700;text-align:right;}
+.warn-cell{color:#b91c1c;font-weight:700;}
+.rate-active td{background:#fef3c7!important;font-weight:700;}
+.rate-active td:last-child{color:var(--gold)!important;}
+.tag-pass{display:inline-block;background:#dcfce7;color:#15803d;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;}
+.tag-fail{display:inline-block;background:#fee2e2;color:#b91c1c;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:700;}
+
+/* Grid layout for side-by-side sections */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+
+/* Batch scroll */
+.batch-wrap{overflow-x:auto;}
+.batch-wrap .xtable{min-width:900px;}
+
+/* Footer */
+.footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">591 業務部 獎金試算器</div>
+  <div class="topbar-sub">2026 年度版</div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-badge">⚙️ 費率設定分頁可修改規則</div>
+</div>
+
+<div class="tabbar">
+  <button class="tab active" onclick="switchTab('sales',this)">🧑‍💼 業務員試算</button>
+  <button class="tab" onclick="switchTab('mgr',this)">👔 課長試算</button>
+  <button class="tab" onclick="switchTab('amgr',this)">👤 副組長試算</button>
+  <button class="tab" onclick="switchTab('batch',this)">📊 多人批量</button>
+  <button class="tab" onclick="switchTab('rates',this)">⚙️ 費率設定</button>
+</div>
+
+<!-- ══ SALES ══ -->
+<div class="page active" id="pg-sales">
+  <div class="toolbar">
+    <div class="toolbar-title">業務員個人季度獎金試算</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-sw" style="background:#fffde7;border-color:#c8a000;"></div>手動輸入</div>
+      <div class="leg"><div class="leg-sw" style="background:#ebf3fb;border-color:#90bfe0;"></div>自動計算</div>
+      <div class="leg"><div class="leg-sw" style="background:#eaf3de;border-color:#90c080;"></div>結果</div>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="sec-title">一、基本資訊</div>
+    <table class="xtable">
+      <colgroup><col style="width:220px"><col style="width:160px"><col></colgroup>
+      <tr><th class="left">欄位</th><th>數值</th><th>說明</th></tr>
+      <tr><td>業務員姓名</td><td class="inp"><input type="text" id="s_name" value="業務員A" style="text-align:left;"></td><td>—</td></tr>
+      <tr><td>季度</td><td class="inp"><select id="s_q"><option>Q1</option><option selected>Q2</option><option>Q3</option><option>Q4</option></select></td><td>—</td></tr>
+      <tr><td>個人季度目標（萬元）</td><td class="inp"><input type="number" id="s_tgt" value="500" min="0"></td><td>由主管設定後填入</td></tr>
+    </table>
+  </div>
+
+  <div class="section-wrap">
+    <div class="sec-title">二、各產品線業績輸入</div>
+    <table class="xtable">
+      <colgroup><col style="width:220px"><col style="width:140px"><col style="width:80px"><col style="width:140px"></colgroup>
+      <tr><th class="left">產品線</th><th>委刊金額（萬）</th><th>係數</th><th>實做業績（萬）</th></tr>
+      <tr><td>站內廣告</td><td class="inp"><input type="number" id="s_p1" value="200" min="0"></td><td class="calc-cell">1.00×</td><td class="calc-cell" id="s_e1">200</td></tr>
+      <tr><td>再行銷廣告</td><td class="inp"><input type="number" id="s_p2" value="100" min="0"></td><td class="calc-cell">1.00×</td><td class="calc-cell" id="s_e2">100</td></tr>
+      <tr><td>數媒站內</td><td class="inp"><input type="number" id="s_p3" value="50" min="0"></td><td class="calc-cell">1.00×</td><td class="calc-cell" id="s_e3">50</td></tr>
+      <tr><td>數媒再行銷及名單</td><td class="inp"><input type="number" id="s_p4" value="50" min="0"></td><td class="calc-cell">1.00×</td><td class="calc-cell" id="s_e4">50</td></tr>
+      <tr class="row-result"><td><strong>實做業績合計</strong></td><td></td><td></td><td class="result-cell big" id="s_prod">400</td></tr>
+    </table>
+  </div>
+
+  <div class="section-wrap">
+    <div class="sec-title">三、達成率 &amp; 獎金計算</div>
+    <table class="xtable">
+      <colgroup><col style="width:260px"><col style="width:160px"><col></colgroup>
+      <tr><th class="left">項目</th><th>數值</th><th>備註</th></tr>
+      <tr><td>達成率</td><td class="calc-cell" id="s_achv">80.0%</td><td></td></tr>
+      <tr><td>70% 門檻判定</td><td id="s_pass" class="calc-cell"></td><td>低於 70% 本季獎金=0</td></tr>
+      <tr><td>適用費率（依達成率查表）</td><td class="calc-cell" id="s_rate">2.35%</td><td>見費率設定分頁</td></tr>
+      <tr class="row-result"><td>獎金總額</td><td class="result-cell" id="s_btotal">—</td><td>實做業績 × 費率</td></tr>
+      <tr class="row-result"><td>▶ 達標獎金（80%，即時發放）</td><td class="result-cell big" id="s_imm">—</td><td>當季結算後 14 天內</td></tr>
+      <tr class="row-result"><td>▷ 業務績效獎金（20%，YTD池）</td><td class="result-cell" id="s_perf">—</td><td>季末 YTD 係數結算</td></tr>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">四、業務績效獎金 YTD 係數</div>
+      <table class="xtable">
+        <tr><th class="left">指標</th><th>達成狀況</th><th>係數</th></tr>
+        <tr>
+          <td>區域滲透率（60%）</td>
+          <td class="inp"><select id="s_pene">
+            <option value="1.3">優秀（+20%以上）</option>
+            <option value="1.15">良好（+5%~+20%）</option>
+            <option value="1.0" selected>達標（±5%以內）</option>
+            <option value="0.85">待改善（-5%~-20%）</option>
+            <option value="0.7">衰退（-20%以上）</option>
+          </select></td>
+          <td class="calc-cell" id="s_pene_c">1.00×</td>
+        </tr>
+        <tr>
+          <td>客單價成長率（40%）</td>
+          <td class="inp"><select id="s_asp">
+            <option value="1.3">優秀（+20%以上）</option>
+            <option value="1.15">良好（+5%~+20%）</option>
+            <option value="1.0" selected>達標（±5%以內）</option>
+            <option value="0.85">待改善（-5%~-20%）</option>
+            <option value="0.7">衰退（-20%以上）</option>
+          </select></td>
+          <td class="calc-cell" id="s_asp_c">1.00×</td>
+        </tr>
+        <tr class="row-result"><td>最終 YTD 係數（上限1.0×）</td><td></td><td class="result-cell" id="s_ytdc">1.00×</td></tr>
+        <tr class="row-result"><td>▶ 本季績效獎金結算</td><td></td><td class="result-cell big" id="s_perf_pay">—</td></tr>
+      </table>
+    </div>
+
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">五、超額獎金（Q4年度結算）</div>
+      <table class="xtable">
+        <tr><th class="left">項目</th><th>數值</th><th>備註</th></tr>
+        <tr><td>部門全年已超4.6億？</td><td class="inp"><select id="s_dover"><option value="0">否</option><option value="1">是</option></select></td><td></td></tr>
+        <tr><td>個人全年YTD實做業績（萬）</td><td class="inp"><input type="number" id="s_ytdp" value="0" min="0"></td><td>Q4填入</td></tr>
+        <tr><td>個人全年目標（萬）</td><td class="inp"><input type="number" id="s_ytdt" value="2000" min="0"></td><td></td></tr>
+        <tr class="row-result"><td>▶ 個人超額獎金（4.5%）</td><td></td><td class="result-cell" id="s_over">NT$ 0</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-wrap">
+    <div class="sec-title green">六、本季獎金彙總</div>
+    <table class="xtable">
+      <colgroup><col style="width:260px"><col style="width:160px"><col></colgroup>
+      <tr><th class="left">項目</th><th>金額</th><th>說明</th></tr>
+      <tr class="row-result"><td>達標獎金（即時實領）</td><td class="result-cell big" id="s_sum1">—</td><td>當季確定發放</td></tr>
+      <tr class="row-result"><td>績效獎金 YTD估算</td><td class="result-cell" id="s_sum2">—</td><td>Q4確認後結算</td></tr>
+      <tr class="row-result"><td>超額獎金（Q4）</td><td class="result-cell" id="s_sum3">NT$ 0</td><td></td></tr>
+      <tr class="final-row"><td>本季合計預估實領</td><td class="result-cell" id="s_total_out">—</td><td></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══ MGR ══ -->
+<div class="page" id="pg-mgr">
+  <div class="toolbar"><div class="toolbar-title">課長季度獎金試算</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-sw" style="background:#fffde7;border-color:#c8a000;"></div>手動輸入</div>
+      <div class="leg"><div class="leg-sw" style="background:#eaf3de;border-color:#90c080;"></div>結果</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">一、基本資訊</div>
+      <table class="xtable">
+        <tr><th class="left">欄位</th><th>數值</th></tr>
+        <tr><td>課長姓名</td><td class="inp"><input type="text" id="m_name" value="課長A" style="text-align:left;"></td></tr>
+        <tr><td>課別</td><td class="inp"><select id="m_dept"><option>業務一課</option><option>業務二課</option><option>業務三課</option></select></td></tr>
+        <tr><td>季度</td><td class="inp"><select id="m_q"><option>Q1</option><option selected>Q2</option><option>Q3</option><option>Q4</option></select></td></tr>
+        <tr><td>課別一般業績（萬，排除室設）</td><td class="inp"><input type="number" id="m_rev" value="5000" min="0"></td></tr>
+        <tr><td>課別年度目標（萬）</td><td class="inp"><input type="number" id="m_ytgt" value="18400" min="0"></td></tr>
+      </table>
+    </div>
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">二、一般業績獎金（1.00%）</div>
+      <table class="xtable">
+        <tr><th class="left">項目</th><th>數值</th></tr>
+        <tr><td>費率</td><td class="calc-cell">1.00%</td></tr>
+        <tr class="row-result"><td>一般業績獎金</td><td class="result-cell big" id="m_gen">—</td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:1px;">三、超額獎金（1.35%，Q4結算）</div>
+      <table class="xtable">
+        <tr><th class="left">項目</th><th>數值</th></tr>
+        <tr><td>部門全年已超4.6億？</td><td class="inp"><select id="m_dover"><option value="0">否</option><option value="1">是</option></select></td></tr>
+        <tr><td>課別全年YTD業績（萬）</td><td class="inp"><input type="number" id="m_ytdp" value="0" min="0"></td></tr>
+        <tr class="row-result"><td>課長超額獎金</td><td class="result-cell" id="m_over">NT$ 0</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="section-wrap">
+    <div class="sec-title">四、室內設計合作加給（業務三課專屬）</div>
+    <table class="xtable">
+      <colgroup><col style="width:220px"><col style="width:100px"><col style="width:110px"><col style="width:140px"></colgroup>
+      <tr><th class="left">項目</th><th>家數</th><th>費率（元/家）</th><th>小計</th></tr>
+      <tr><td>當年既有客戶</td><td class="inp"><input type="number" id="m_id1" value="150" min="0"></td><td class="calc-cell">1,000</td><td class="calc-cell" id="m_id1s">150,000</td></tr>
+      <tr><td>當年新增客戶</td><td class="inp"><input type="number" id="m_id2" value="0" min="0"></td><td class="calc-cell">3,000</td><td class="calc-cell" id="m_id2s">0</td></tr>
+      <tr><td>衰退倒扣</td><td class="inp"><input type="number" id="m_id3" value="0" min="0"></td><td class="calc-cell" style="color:#b91c1c;">−800</td><td class="calc-cell" id="m_id3s" style="color:#b91c1c;">0</td></tr>
+      <tr class="row-result"><td><strong>室內設計合作加給合計</strong></td><td></td><td></td><td class="result-cell" id="m_id_tot">NT$ 150,000</td></tr>
+    </table>
+  </div>
+  <div class="section-wrap">
+    <div class="sec-title green">五、課長獎金彙總</div>
+    <table class="xtable">
+      <colgroup><col style="width:260px"><col style="width:160px"><col></colgroup>
+      <tr><th class="left">項目</th><th>金額</th><th></th></tr>
+      <tr class="row-result"><td>一般業績獎金</td><td class="result-cell" id="m_s1">—</td><td></td></tr>
+      <tr class="row-result"><td>室內設計合作加給</td><td class="result-cell" id="m_s2">—</td><td>三課適用</td></tr>
+      <tr class="row-result"><td>超額獎金（Q4）</td><td class="result-cell" id="m_s3">NT$ 0</td><td></td></tr>
+      <tr class="final-row"><td>本季合計</td><td class="result-cell" id="m_total">—</td><td></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══ AMGR ══ -->
+<div class="page" id="pg-amgr">
+  <div class="toolbar"><div class="toolbar-title">副組長季度獎金試算</div></div>
+  <div class="grid2">
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">一、基本資訊</div>
+      <table class="xtable">
+        <tr><th class="left">欄位</th><th>數值</th></tr>
+        <tr><td>副組長姓名</td><td class="inp"><input type="text" id="a_name" value="副組長A" style="text-align:left;"></td></tr>
+        <tr><td>課別</td><td class="inp"><select id="a_dept"><option>業務一課</option><option>業務二課</option><option>業務三課</option></select></td></tr>
+        <tr><td>課別一般業績（萬，排除室設）</td><td class="inp"><input type="number" id="a_rev" value="5000" min="0"></td></tr>
+        <tr><td>課別年度目標（萬）</td><td class="inp"><input type="number" id="a_ytgt" value="18400" min="0"></td></tr>
+      </table>
+    </div>
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">二、一般業績獎金（0.63%）</div>
+      <table class="xtable">
+        <tr><th class="left">項目</th><th>數值</th></tr>
+        <tr><td>費率</td><td class="calc-cell">0.63%</td></tr>
+        <tr class="row-result"><td>一般業績獎金</td><td class="result-cell big" id="a_gen">—</td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:1px;">三、超額獎金（0.85%，Q4結算）</div>
+      <table class="xtable">
+        <tr><th class="left">項目</th><th>數值</th></tr>
+        <tr><td>部門全年已超4.6億？</td><td class="inp"><select id="a_dover"><option value="0">否</option><option value="1">是</option></select></td></tr>
+        <tr><td>課別全年YTD業績（萬）</td><td class="inp"><input type="number" id="a_ytdp" value="0" min="0"></td></tr>
+        <tr class="row-result"><td>副組長超額獎金</td><td class="result-cell" id="a_over">NT$ 0</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="section-wrap">
+    <div class="sec-title">四、室內設計合作加給（業務三課專屬）</div>
+    <table class="xtable">
+      <colgroup><col style="width:220px"><col style="width:100px"><col style="width:110px"><col style="width:140px"></colgroup>
+      <tr><th class="left">項目</th><th>家數</th><th>費率（元/家）</th><th>小計</th></tr>
+      <tr><td>當年既有客戶</td><td class="inp"><input type="number" id="a_id1" value="150" min="0"></td><td class="calc-cell">600</td><td class="calc-cell" id="a_id1s">90,000</td></tr>
+      <tr><td>當年新增客戶</td><td class="inp"><input type="number" id="a_id2" value="0" min="0"></td><td class="calc-cell">1,800</td><td class="calc-cell" id="a_id2s">0</td></tr>
+      <tr><td>衰退倒扣</td><td class="inp"><input type="number" id="a_id3" value="0" min="0"></td><td class="calc-cell" style="color:#b91c1c;">−500</td><td class="calc-cell" id="a_id3s" style="color:#b91c1c;">0</td></tr>
+      <tr class="row-result"><td><strong>室內設計合作加給合計</strong></td><td></td><td></td><td class="result-cell" id="a_id_tot">NT$ 90,000</td></tr>
+    </table>
+  </div>
+  <div class="section-wrap">
+    <div class="sec-title green">五、副組長獎金彙總</div>
+    <table class="xtable">
+      <colgroup><col style="width:260px"><col style="width:160px"><col></colgroup>
+      <tr><th class="left">項目</th><th>金額</th><th></th></tr>
+      <tr class="row-result"><td>一般業績獎金</td><td class="result-cell" id="a_s1">—</td><td></td></tr>
+      <tr class="row-result"><td>室內設計合作加給</td><td class="result-cell" id="a_s2">—</td><td>三課適用</td></tr>
+      <tr class="row-result"><td>超額獎金（Q4）</td><td class="result-cell" id="a_s3">NT$ 0</td><td></td></tr>
+      <tr class="final-row"><td>本季合計</td><td class="result-cell" id="a_total">—</td><td></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══ BATCH ══ -->
+<div class="page" id="pg-batch">
+  <div class="toolbar">
+    <div class="toolbar-title">多人批量試算（業務員）</div>
+    <div class="legend">
+      <div class="leg"><div class="leg-sw" style="background:#fffde7;border-color:#c8a000;"></div>手動輸入（業績單位：萬元）</div>
+      <div class="leg"><div class="leg-sw" style="background:#eaf3de;border-color:#90c080;"></div>自動計算</div>
+    </div>
+  </div>
+  <div class="section-wrap">
+    <div class="sec-title">批量輸入</div>
+    <div class="batch-wrap">
+      <table class="xtable">
+        <tr>
+          <th class="left" style="width:90px;">姓名</th>
+          <th style="width:80px;">目標(萬)</th>
+          <th style="width:80px;">站內廣告</th>
+          <th style="width:80px;">再行銷</th>
+          <th style="width:80px;">數媒站內</th>
+          <th style="width:80px;">數媒再行銷</th>
+          <th style="width:90px;background:#154f8a;">實做業績</th>
+          <th style="width:70px;background:#154f8a;">達成率</th>
+          <th style="width:70px;background:#154f8a;">費率</th>
+          <th style="width:110px;background:#1a4a20;">達標獎金</th>
+          <th style="width:110px;background:#1a4a20;">績效池</th>
+        </tr>
+        <tbody id="batch-body"></tbody>
+        <tr style="font-weight:700;background:#dbeafe;">
+          <td colspan="6" style="text-align:right;color:var(--navy);font-size:12px;padding-right:12px;">合計</td>
+          <td class="calc-cell" id="bt-prod">—</td>
+          <td></td><td></td>
+          <td class="result-cell" id="bt-imm">—</td>
+          <td class="result-cell" id="bt-perf">—</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RATES ══ -->
+<div class="page" id="pg-rates">
+  <div class="toolbar"><div class="toolbar-title">⚙️ 費率設定（修改後全站自動重算）</div></div>
+  <div class="grid2">
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">達成率費率表</div>
+      <table class="xtable">
+        <colgroup><col style="width:160px"><col style="width:130px"><col></colgroup>
+        <tr><th>達成率門檻</th><th>費率</th><th>備註</th></tr>
+        <tr id="rr-100"><td>≥ 100%</td><td class="inp"><input type="number" id="rt_100" value="3.00" step="0.01" min="0" max="10" style="width:70px;"> %</td><td>封頂</td></tr>
+        <tr id="rr-95"><td>95% ~ 99.99%</td><td class="inp"><input type="number" id="rt_95" value="2.85" step="0.01" min="0" max="10" style="width:70px;"> %</td><td></td></tr>
+        <tr id="rr-90"><td>90% ~ 94.99%</td><td class="inp"><input type="number" id="rt_90" value="2.70" step="0.01" min="0" max="10" style="width:70px;"> %</td><td></td></tr>
+        <tr id="rr-85"><td>85% ~ 89.99%</td><td class="inp"><input type="number" id="rt_85" value="2.50" step="0.01" min="0" max="10" style="width:70px;"> %</td><td></td></tr>
+        <tr id="rr-80"><td>80% ~ 84.99%</td><td class="inp"><input type="number" id="rt_80" value="2.35" step="0.01" min="0" max="10" style="width:70px;"> %</td><td></td></tr>
+        <tr id="rr-75"><td>75% ~ 79.99%</td><td class="inp"><input type="number" id="rt_75" value="2.00" step="0.01" min="0" max="10" style="width:70px;"> %</td><td>最低保底費率</td></tr>
+        <tr id="rr-70"><td>70% ~ 74.99%</td><td class="inp"><input type="number" id="rt_70" value="1.85" step="0.01" min="0" max="10" style="width:70px;"> %</td><td></td></tr>
+        <tr><td style="background:#fee2e2;color:#b91c1c;font-weight:700;">&lt; 70%</td><td style="background:#fee2e2;color:#b91c1c;font-weight:700;text-align:center;">0%</td><td style="background:#fee2e2;">本季獎金=0</td></tr>
+      </table>
+    </div>
+    <div class="section-wrap" style="margin-bottom:0;">
+      <div class="sec-title">其他關鍵參數</div>
+      <table class="xtable">
+        <colgroup><col><col style="width:120px;"></colgroup>
+        <tr><th class="left">參數</th><th>數值</th></tr>
+        <tr><td>達標獎金佔比（即時發放）</td><td class="inp"><input type="number" id="cfg_imm" value="80" min="0" max="100" style="width:55px;"> %</td></tr>
+        <tr><td>業務員超額費率</td><td class="inp"><input type="number" id="cfg_ovr_s" value="4.5" step="0.01" style="width:55px;"> %</td></tr>
+        <tr><td>課長超額費率</td><td class="inp"><input type="number" id="cfg_ovr_m" value="1.35" step="0.01" style="width:55px;"> %</td></tr>
+        <tr><td>副組長超額費率</td><td class="inp"><input type="number" id="cfg_ovr_a" value="0.85" step="0.01" style="width:55px;"> %</td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:1px;">主管業績獎金費率</div>
+      <table class="xtable">
+        <colgroup><col><col style="width:120px;"></colgroup>
+        <tr><th class="left">職稱</th><th>費率</th></tr>
+        <tr><td>課長（一般業績）</td><td class="inp"><input type="number" id="cfg_mgr" value="1.00" step="0.01" style="width:55px;"> %</td></tr>
+        <tr><td>副組長（一般業績）</td><td class="inp"><input type="number" id="cfg_amgr" value="0.63" step="0.01" style="width:55px;"> %</td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:1px;">室內設計加給費率（課長）</div>
+      <table class="xtable">
+        <colgroup><col><col style="width:120px;"></colgroup>
+        <tr><th class="left">項目</th><th>費率（元/家）</th></tr>
+        <tr><td>既有客戶（基本費）</td><td class="inp"><input type="number" id="cfg_id1m" value="1000" step="100" style="width:70px;"></td></tr>
+        <tr><td>新增客戶（成長費）</td><td class="inp"><input type="number" id="cfg_id2m" value="3000" step="100" style="width:70px;"></td></tr>
+        <tr><td>衰退倒扣（每家）</td><td class="inp"><input type="number" id="cfg_id3m" value="800" step="100" style="width:70px;"></td></tr>
+      </table>
+      <div class="sec-title" style="margin-top:1px;">室內設計加給費率（副組長）</div>
+      <table class="xtable">
+        <colgroup><col><col style="width:120px;"></colgroup>
+        <tr><th class="left">項目</th><th>費率（元/家）</th></tr>
+        <tr><td>既有客戶（基本費）</td><td class="inp"><input type="number" id="cfg_id1a" value="600" step="100" style="width:70px;"></td></tr>
+        <tr><td>新增客戶（成長費）</td><td class="inp"><input type="number" id="cfg_id2a" value="1800" step="100" style="width:70px;"></td></tr>
+        <tr><td>衰退倒扣（每家）</td><td class="inp"><input type="number" id="cfg_id3a" value="500" step="100" style="width:70px;"></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="footer">591 業務部 · 2026 獎金辦法試算器 · 僅供試算參考，實際發放以核決辦法為準</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const nv=id=>parseFloat($(''+id)?.value)||0;
+const ntd=v=>'NT$ '+Math.round(v).toLocaleString('zh-TW');
+const wan=v=>(Math.round(v*10)/10).toLocaleString('zh-TW');
+
+function getRates(){
+  return [
+    {t:1.00,r:nv('rt_100')/100||0.03},
+    {t:0.95,r:nv('rt_95')/100||0.0285},
+    {t:0.90,r:nv('rt_90')/100||0.027},
+    {t:0.85,r:nv('rt_85')/100||0.025},
+    {t:0.80,r:nv('rt_80')/100||0.0235},
+    {t:0.75,r:nv('rt_75')/100||0.02},
+    {t:0.70,r:nv('rt_70')/100||0.0185},
+  ];
+}
+function lookupRate(achv){
+  if(achv<0.70)return 0;
+  const rates=getRates();
+  for(let i=0;i<rates.length;i++)if(achv>=rates[i].t)return rates[i].r;
+  return rates[rates.length-1].r;
+}
+
+function calcSales(){
+  const tgt=nv('s_tgt');
+  const p1=nv('s_p1'),p2=nv('s_p2'),p3=nv('s_p3'),p4=nv('s_p4');
+  const prod=p1+p2+p3+p4;
+  const achv=tgt>0?prod/tgt:0;
+  const pass=achv>=0.70;
+  const rate=lookupRate(achv);
+  const imm_pct=nv('cfg_imm')/100||0.8;
+  const bonus=prod*10000*rate;
+  const imm=bonus*imm_pct, perf=bonus*(1-imm_pct);
+  const pene=parseFloat($('s_pene').value)||1;
+  const asp=parseFloat($('s_asp').value)||1;
+  const ytdc=Math.min(pene*0.6+asp*0.4,1.0);
+  const perfPay=perf*ytdc;
+  const dover=parseInt($('s_dover').value)||0;
+  const ytdp=nv('s_ytdp'),ytdt=nv('s_ytdt');
+  const ovrs=nv('cfg_ovr_s')/100||0.045;
+  const over=dover&&ytdp>ytdt?Math.max(ytdp-ytdt,0)*10000*ovrs:0;
+
+  $('s_e1').textContent=wan(p1);$('s_e2').textContent=wan(p2);
+  $('s_e3').textContent=wan(p3);$('s_e4').textContent=wan(p4);
+  $('s_prod').textContent=wan(prod);
+  $('s_achv').textContent=(achv*100).toFixed(1)+'%';
+  $('s_pass').innerHTML=pass?'<span class="tag-pass">✅ 達標，啟動計算</span>':'<span class="tag-fail">❌ 未達標，獎金=0</span>';
+  $('s_rate').textContent=pass?(rate*100).toFixed(2)+'%':'0%';
+  $('s_btotal').textContent=pass?ntd(bonus):'NT$ 0';
+  $('s_imm').textContent=pass?ntd(imm):'NT$ 0';
+  $('s_perf').textContent=pass?ntd(perf):'NT$ 0';
+  $('s_pene_c').textContent=pene.toFixed(2)+'×';
+  $('s_asp_c').textContent=asp.toFixed(2)+'×';
+  $('s_ytdc').textContent=ytdc.toFixed(2)+'×';
+  $('s_perf_pay').textContent=pass?ntd(perfPay):'NT$ 0';
+  $('s_over').textContent=ntd(over);
+  $('s_sum1').textContent=pass?ntd(imm):'NT$ 0';
+  $('s_sum2').textContent=pass?ntd(perfPay):'NT$ 0';
+  $('s_sum3').textContent=ntd(over);
+  $('s_total_out').textContent=pass?ntd(imm+perfPay+over):'NT$ 0';
+
+  ['100','95','90','85','80','75','70'].forEach(k=>{$('rr-'+k)?.classList.remove('rate-active');});
+  if(pass){
+    const tmap={'100':1.00,'95':0.95,'90':0.90,'85':0.85,'80':0.80,'75':0.75,'70':0.70};
+    const key=['100','95','90','85','80','75','70'].find(k=>achv>=tmap[k]);
+    if(key)$('rr-'+key)?.classList.add('rate-active');
+  }
+}
+
+function calcMgr(){
+  const rev=nv('m_rev');
+  const mgrRate=nv('cfg_mgr')/100||0.01;
+  const gen=rev*10000*mgrRate;
+  const id1=nv('m_id1'),id2=nv('m_id2'),id3=nv('m_id3');
+  const r1=nv('cfg_id1m')||1000,r2=nv('cfg_id2m')||3000,r3=nv('cfg_id3m')||800;
+  const idTot=id1*r1+id2*r2-id3*r3;
+  const dover=parseInt($('m_dover').value)||0;
+  const ytdp=nv('m_ytdp'),ytgt=nv('m_ytgt');
+  const ovrm=nv('cfg_ovr_m')/100||0.0135;
+  const over=dover&&ytdp>ytgt?Math.max(ytdp-ytgt,0)*10000*ovrm:0;
+  $('m_id1s').textContent=(id1*r1).toLocaleString('zh-TW');
+  $('m_id2s').textContent=(id2*r2).toLocaleString('zh-TW');
+  $('m_id3s').textContent=(id3*r3).toLocaleString('zh-TW');
+  $('m_id_tot').textContent=ntd(idTot);
+  $('m_gen').textContent=ntd(gen);
+  $('m_over').textContent=ntd(over);
+  $('m_s1').textContent=ntd(gen);$('m_s2').textContent=ntd(idTot);$('m_s3').textContent=ntd(over);
+  $('m_total').textContent=ntd(gen+idTot+over);
+}
+
+function calcAmgr(){
+  const rev=nv('a_rev');
+  const amgrRate=nv('cfg_amgr')/100||0.0063;
+  const gen=rev*10000*amgrRate;
+  const id1=nv('a_id1'),id2=nv('a_id2'),id3=nv('a_id3');
+  const r1=nv('cfg_id1a')||600,r2=nv('cfg_id2a')||1800,r3=nv('cfg_id3a')||500;
+  const idTot=id1*r1+id2*r2-id3*r3;
+  const dover=parseInt($('a_dover').value)||0;
+  const ytdp=nv('a_ytdp'),ytgt=nv('a_ytgt');
+  const ovra=nv('cfg_ovr_a')/100||0.0085;
+  const over=dover&&ytdp>ytgt?Math.max(ytdp-ytgt,0)*10000*ovra:0;
+  $('a_id1s').textContent=(id1*r1).toLocaleString('zh-TW');
+  $('a_id2s').textContent=(id2*r2).toLocaleString('zh-TW');
+  $('a_id3s').textContent=(id3*r3).toLocaleString('zh-TW');
+  $('a_id_tot').textContent=ntd(idTot);
+  $('a_gen').textContent=ntd(gen);
+  $('a_over').textContent=ntd(over);
+  $('a_s1').textContent=ntd(gen);$('a_s2').textContent=ntd(idTot);$('a_s3').textContent=ntd(over);
+  $('a_total').textContent=ntd(gen+idTot+over);
+}
+
+const BATCH_N=10;
+function initBatch(){
+  const tb=$('batch-body');
+  const demos=[['業務員A',500,200,100,50,50],['業務員B',300,150,80,0,0],['業務員C',400,200,50,30,20]];
+  for(let i=0;i<BATCH_N;i++){
+    const d=demos[i]||['',300,0,0,0,0];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="inp"><input type="text" id="b${i}n" value="${d[0]}" style="width:76px;text-align:left;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;outline:none;font-family:inherit;"></td>
+      <td class="inp"><input type="number" id="b${i}t" value="${d[1]}" min="0" style="width:68px;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;text-align:right;outline:none;font-family:inherit;"></td>
+      <td class="inp"><input type="number" id="b${i}p1" value="${d[2]}" min="0" style="width:68px;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;text-align:right;outline:none;font-family:inherit;"></td>
+      <td class="inp"><input type="number" id="b${i}p2" value="${d[3]}" min="0" style="width:68px;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;text-align:right;outline:none;font-family:inherit;"></td>
+      <td class="inp"><input type="number" id="b${i}p3" value="${d[4]}" min="0" style="width:68px;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;text-align:right;outline:none;font-family:inherit;"></td>
+      <td class="inp"><input type="number" id="b${i}p4" value="${d[5]}" min="0" style="width:68px;height:26px;border:1px solid #c8a000;border-radius:3px;padding:0 5px;font-size:12px;background:var(--input-bg);color:#7a5b00;font-weight:700;text-align:right;outline:none;font-family:inherit;"></td>
+      <td class="calc-cell" id="b${i}prod"></td>
+      <td class="calc-cell" id="b${i}achv"></td>
+      <td class="calc-cell" id="b${i}rate"></td>
+      <td class="result-cell" id="b${i}imm"></td>
+      <td class="result-cell" id="b${i}perf"></td>`;
+    tb.appendChild(tr);
+    tr.querySelectorAll('input').forEach(el=>el.addEventListener('input',calcBatch));
+  }
+}
+function calcBatch(){
+  const imm_pct=nv('cfg_imm')/100||0.8;
+  let totProd=0,totImm=0,totPerf=0;
+  for(let i=0;i<BATCH_N;i++){
+    const tgt=parseFloat($('b'+i+'t')?.value)||0;
+    const p1=parseFloat($('b'+i+'p1')?.value)||0;
+    const p2=parseFloat($('b'+i+'p2')?.value)||0;
+    const p3=parseFloat($('b'+i+'p3')?.value)||0;
+    const p4=parseFloat($('b'+i+'p4')?.value)||0;
+    const prod=p1+p2+p3+p4;
+    const achv=tgt>0?prod/tgt:0;
+    const pass=achv>=0.70;
+    const rate=lookupRate(achv);
+    const bonus=prod*10000*rate;
+    const imm=bonus*imm_pct,perf=bonus*(1-imm_pct);
+    $('b'+i+'prod').textContent=wan(prod);
+    $('b'+i+'achv').textContent=(achv*100).toFixed(1)+'%';
+    $('b'+i+'achv').style.color=pass?'#185fa5':'#b91c1c';
+    $('b'+i+'rate').textContent=pass?(rate*100).toFixed(2)+'%':'0%';
+    $('b'+i+'imm').textContent=pass?ntd(imm):'NT$ 0';
+    $('b'+i+'perf').textContent=pass?ntd(perf):'NT$ 0';
+    totProd+=prod;if(pass){totImm+=imm;totPerf+=perf;}
+  }
+  $('bt-prod').textContent=wan(totProd);
+  $('bt-imm').textContent=ntd(totImm);
+  $('bt-perf').textContent=ntd(totPerf);
+}
+
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  $('pg-'+id).classList.add('active');
+}
+
+function calcAll(){calcSales();calcMgr();calcAmgr();calcBatch();}
+
+// Wire all config + page inputs
+document.querySelectorAll('input[id^="rt_"],input[id^="cfg_"],select[id^="s_"],input[id^="s_"],select[id^="m_"],input[id^="m_"],select[id^="a_"],input[id^="a_"]')
+  .forEach(el=>el.addEventListener('input',calcAll));
+
+initBatch();
+calcAll();
+</script>
+</body>
+</html>
